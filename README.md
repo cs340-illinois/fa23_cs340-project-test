@@ -1,2 +1,2 @@
-# -fa23_cs340-project-test
+# Shared Test Server
 Shared Test Server for Image Infection
