@@ -1,21 +1,10 @@
 import json
-import logging
-from flask import Flask, jsonify, send_file, render_template, request
+from flask import Flask, jsonify, render_template, request
 import requests
-import base64
 import dotenv
+import os
 
 app = Flask(__name__)
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-def init():
-    dotenv.load_dotenv()
-
 
 status = 'accept'
 xdim = 10
@@ -24,12 +13,26 @@ tilesize = 5
 xloc = 0
 yloc = 0
 voteToken = '45046605-4ef3-4dfc-84ed-cfafade8a2db'
+
 # For simple testing just use one client
 approved = 'true'
 currentAuthToken = 'none'
 currentClientID = 'none'
 currentURL = 'none'
 currentAuthor = 'none'
+
+UPLOAD_FOLDER = "uploads"
+
+image_requests = []
+
+
+def init():
+    dotenv.load_dotenv()
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 
 @app.route('/getState', methods=['GET'])
@@ -67,29 +70,33 @@ def POST_reject():
 
 @app.route('/registerImage/<clientID>', methods=["POST"])
 def POST_registerImage(clientID):
-    global status
-    if (status == 'accept'):
-        return "OK", 200
-    else
-    return "Wrong Dimension", 500
+    if 'file' not in request.files:
+        return "", 400
+
+    file = request.files['file']
+
+    if not file or not file.filename or file.filename == '':
+        return "", 500
+
+    os.makedirs(UPLOAD_FOLDER + "/" + clientID, exist_ok=True)
+    file.save(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename)
+    print("file saved")
+    return "", 200
 
 
-@app.route('/registerClient/<clientID>', methods=["PUT"])
+@ app.route('/registerClient/<clientID>', methods=["PUT"])
 def PUT_registerClient(clientID):
     # this puts a json with the following
     # token : auth token for the server
     # url : "http://server:port/"
     # author : "Your Name"
-    data = request.json
+    data = request.get_json()
     print("registerClient/", clientID, json.dumps(data))
 
-    global currentClientID
+    global currentClientID, currentURL, currentAuthToken, currentAuthor
     currentClientID = clientID
-    global currentURL
     currentURL = data["url"]
-    global currentAuthToken
     currentAuthToken = data["token"]
-    global currentAuthor
     currentAuthor = data["author"]
 
     # otherwise return 200 "success" and json with
@@ -101,13 +108,14 @@ def PUT_registerClient(clientID):
         'ydim': ydim,
         'tilesize': tilesize
     })
+
     return canvasInfo, 200
 
 
-@app.route("/registeredTest", methods=["GET"])
+@ app.route("/registeredTest", methods=["GET"])
 def GET_registeredTest():
 
-    state = jsonify({
+    response = requests.put(f'{currentURL}/registered', json={
         'xloc': xloc,
         'yloc': yloc,
         'voteToken': voteToken,
@@ -115,8 +123,4 @@ def GET_registeredTest():
         'authToken': currentAuthToken,
     })
 
-    response = requests.put(f'{currentURL}/registered', data=json.dumps(
-        state), headers={'Content-Type': 'application/json'})
-
-    return response
-
+    return response.text, response.status_code
