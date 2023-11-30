@@ -1,5 +1,5 @@
 import json
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 import requests
 import dotenv
 import os
@@ -14,7 +14,6 @@ xloc = 0
 yloc = 0
 voteToken = '45046605-4ef3-4dfc-84ed-cfafade8a2db'
 
-# For simple testing just use one client
 approved = 'true'
 currentAuthToken = 'none'
 currentClientID = 'none'
@@ -24,16 +23,25 @@ currentAuthor = 'none'
 UPLOAD_FOLDER = "uploads"
 
 image_requests = []
-
+client_image_mapping = {} 
 
 def init():
     dotenv.load_dotenv()
 
-
 @app.route('/')
 def index():
+    global file
     return render_template('index.html')
 
+@app.route('/getClientData', methods=['GET'])
+def GET_client_data():
+    client_data = []
+    for clientID, images in client_image_mapping.items():
+        client_data.append({
+            'clientID': clientID,
+            'imageURLs': [f'/getImage/{clientID}/{image}' for image in images]
+        })
+    return jsonify(client_data), 200
 
 @app.route('/getState', methods=['GET'])
 def GET_state():
@@ -53,13 +61,11 @@ def GET_state():
     })
     return state, 200
 
-
 @app.route('/accept', methods=['POST'])
 def POST_accept():
     global status
     status = 'accept'
     return "OK", 200
-
 
 @app.route('/reject', methods=['POST'])
 def POST_reject():
@@ -67,12 +73,10 @@ def POST_reject():
     status = 'reject'
     return "OK", 200
 
-
 @app.route('/registerImage/<clientID>', methods=["POST"])
 def POST_registerImage(clientID):
     if 'file' not in request.files:
         return "", 400
-
     file = request.files['file']
 
     if not file or not file.filename or file.filename == '':
@@ -81,6 +85,12 @@ def POST_registerImage(clientID):
     os.makedirs(UPLOAD_FOLDER + "/" + clientID, exist_ok=True)
     file.save(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename)
     print("file saved")
+
+    if clientID in client_image_mapping:
+        client_image_mapping[clientID].append(file.filename)
+    else:
+        client_image_mapping[clientID] = [file.filename]
+
     return "", 200
 
 
@@ -124,3 +134,7 @@ def GET_registeredTest():
     })
 
     return response.text, response.status_code
+
+@app.route('/getImage/<clientID>/<imageFileName>', methods=["GET"])
+def GET_image(clientID, imageFileName):
+    return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png') 
