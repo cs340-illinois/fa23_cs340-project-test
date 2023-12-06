@@ -21,6 +21,7 @@ currentAuthToken = 'none'
 currentClientID = 'none'
 currentURL = 'none'
 currentAuthor = 'none'
+seqnum = 0
 
 UPLOAD_FOLDER = "uploads"
 
