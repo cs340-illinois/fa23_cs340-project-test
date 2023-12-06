@@ -3,6 +3,8 @@ from flask import Flask, jsonify, render_template, request, send_file
 import requests
 import dotenv
 import os
+from PIL import Image
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -138,3 +140,63 @@ def GET_registeredTest():
 @app.route('/getImage/<clientID>/<imageFileName>', methods=["GET"])
 def GET_image(clientID, imageFileName):
     return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png') 
+
+@app.route("/vote/<clientID>", methods=["PUT"])
+def putvote(clientID):
+    r1 = request.get_json()
+    vttkn = r1["voteToken"]
+    if(vttkn == voteToken):
+        x = r1["xloc"]
+        y = r1["yloc"]
+        toret = {"x":x, "y":y}
+        return jsonify(toret),200
+
+@app.route("/one/votes", methods=["GET"])
+def getvoteone():
+    toret = {"votes": 3}
+    return jsonify(toret)
+    
+@app.route("/two/votes", methods=["GET"])
+def gettwovote():
+    toret = {"votes": 1}
+    return jsonify(toret)
+
+
+@app.route("/one/image", methods=["GET"])
+def getimageone():
+    image = Image.open('temp/myimg.png')
+    nwimg = image.resize((tilesize*xdim, tilesize*ydim))
+    nwimg.save('nwimg1.png')
+    return send_file("nwimg1.png", mimetype='image/png'), 200
+
+@app.route("/two/image", methods=["GET"])
+def getimagetwo():
+    image = Image.open('temp/input.png')
+    nwimg = image.resize((tilesize*xdim, tilesize*ydim))
+    nwimg.save('nwimg2.png')
+    return send_file("nwimg2.png", mimetype='image/png'), 200
+
+@ app.route("/testupdate", methods=["GET"])
+def testupdate():
+    global seqnum
+    seqnum = seqnum + 1
+    #assuming that you are running on http://127.0.0.1:34000
+    #voteadd = {"authToken": currentAuthToken, "seq": seqnum, "votes": 2}
+    r1 = requests.put(f'{currentURL}/votes', json={"token": currentAuthToken, "seq": seqnum, "votes": 2})
+    print(r1.status_code)
+    response = requests.put(f'{currentURL}/update', json={
+        "authToken": currentAuthToken,
+        "neighbors": ["http://127.0.0.1:34000/one/", "http://127.0.0.1:34000/two/"]}
+    )
+    #if you want to see the tile returned
+    '''tileresponse = requests.get(f'{currentURL}/tile')
+    image_data = BytesIO(tileresponse.content)
+    with Image.open(image_data) as img:
+        img.save('tileimg.png')
+    return send_file("tileimg.png", mimetype='image/png'), 200'''
+    #currently set to show the whole image
+    tileresponse = requests.get(f'{currentURL}/image')
+    image_data = BytesIO(tileresponse.content)
+    with Image.open(image_data) as img:
+        img.save('tileimg.png')
+    return send_file("tileimg.png", mimetype='image/png'), 200
