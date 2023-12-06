@@ -7,14 +7,15 @@ import os
 app = Flask(__name__)
 
 status = 'accept'
-xdim = 10
+xdim = 15
 ydim = 10
-tilesize = 5
+tilesize = 30
 xloc = 0
 yloc = 0
 voteToken = '45046605-4ef3-4dfc-84ed-cfafade8a2db'
+seq = 0
 
-approved = 'true'
+approved = False
 currentAuthToken = 'none'
 currentClientID = 'none'
 currentURL = 'none'
@@ -23,7 +24,7 @@ currentAuthor = 'none'
 UPLOAD_FOLDER = "uploads"
 
 image_requests = []
-client_image_mapping = {} 
+client_image_mapping = {}
 
 def init():
     dotenv.load_dotenv()
@@ -63,14 +64,16 @@ def GET_state():
 
 @app.route('/accept', methods=['POST'])
 def POST_accept():
-    global status
+    global status, approved
     status = 'accept'
+    approved = True
     return "OK", 200
 
 @app.route('/reject', methods=['POST'])
 def POST_reject():
-    global status
+    global status, approved
     status = 'reject'
+    approved = False
     return "OK", 200
 
 @app.route('/registerImage/<clientID>', methods=["POST"])
@@ -119,6 +122,8 @@ def PUT_registerClient(clientID):
         'tilesize': tilesize
     })
 
+    client_image_mapping[clientID] = []
+
     return canvasInfo, 200
 
 
@@ -137,4 +142,24 @@ def GET_registeredTest():
 
 @app.route('/getImage/<clientID>/<imageFileName>', methods=["GET"])
 def GET_image(clientID, imageFileName):
-    return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png') 
+    return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png')
+
+
+@app.route('/vote', methods=['PUT'])
+def PUT_vote():
+    data = request.get_json()
+    print("vote/", json.dumps(data))
+    return "VOTE OK", 200
+
+@app.route('/votesTest', methods=['GET'])
+def GET_votes():
+    global seq
+    response = requests.put(f'{currentURL}/votes', json={
+        'token': voteToken,
+        'votes': 5,
+        'seq': seq,
+    })
+    seq += 1
+
+    return response.text, response.status_code
+
