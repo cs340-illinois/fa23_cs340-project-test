@@ -15,7 +15,7 @@ yloc = 0
 voteToken = '45046605-4ef3-4dfc-84ed-cfafade8a2db'
 seq = 0
 
-approved = False
+approved = 'true'
 currentAuthToken = 'none'
 currentClientID = 'none'
 currentURL = 'none'
@@ -66,14 +66,14 @@ def GET_state():
 def POST_accept():
     global status, approved
     status = 'accept'
-    approved = True
+    approved = 'true'
     return "OK", 200
 
 @app.route('/reject', methods=['POST'])
 def POST_reject():
     global status, approved
     status = 'reject'
-    approved = False
+    approved = 'false'
     return "OK", 200
 
 @app.route('/registerImage/<clientID>', methods=["POST"])
@@ -88,6 +88,9 @@ def POST_registerImage(clientID):
     os.makedirs(UPLOAD_FOLDER + "/" + clientID, exist_ok=True)
     file.save(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename)
     print("file saved")
+
+    with open(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename, 'rb') as src_file, open("canvas.png", 'wb') as dest_file:
+        dest_file.write(src_file.read())
 
     if clientID in client_image_mapping:
         client_image_mapping[clientID].append(file.filename)
@@ -135,7 +138,7 @@ def GET_registeredTest():
         'yloc': yloc,
         'voteToken': voteToken,
         'approved': approved,
-        'authToken': currentAuthToken,
+        'authtoken': currentAuthToken,
     })
 
     return response.text, response.status_code
@@ -163,3 +166,7 @@ def GET_votes():
 
     return response.text, response.status_code
 
+
+@app.route('/canvas', methods=["GET"])
+def GET_canvas():
+    return send_file("canvas.png", mimetype='image/png')
