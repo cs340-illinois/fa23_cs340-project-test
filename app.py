@@ -158,7 +158,7 @@ def PUT_vote():
 def GET_votes():
     global seq
     response = requests.put(f'{currentURL}/votes', json={
-        'token': voteToken,
+        'authToken': currentAuthToken,
         'votes': 5,
         'seq': seq,
     })
