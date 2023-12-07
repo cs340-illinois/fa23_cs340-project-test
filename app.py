@@ -138,7 +138,7 @@ def GET_registeredTest():
         'yloc': yloc,
         'voteToken': voteToken,
         'approved': approved,
-        'authtoken': currentAuthToken,
+        'authToken': currentAuthToken,
     })
 
     return response.text, response.status_code
