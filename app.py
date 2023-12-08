@@ -54,7 +54,7 @@ def GET_state():
         'xloc': xloc,
         'yloc': yloc,
         'voteToken': voteToken,
-        'approved': approved,
+        'approved': True if approved == 'true' else False,
         'currentAuthToken': currentAuthToken,
         'currentAuthor': currentAuthor,
         'currentClientID': currentClientID,
@@ -137,7 +137,7 @@ def GET_registeredTest():
         'xloc': xloc,
         'yloc': yloc,
         'voteToken': voteToken,
-        'approved': approved,
+        'approved': True if approved == 'true' else False,
         'authToken': currentAuthToken,
     })
 
@@ -148,10 +148,10 @@ def GET_image(clientID, imageFileName):
     return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png')
 
 
-@app.route('/vote', methods=['PUT'])
-def PUT_vote():
+@app.route('/vote/<clientID>', methods=['PUT'])
+def PUT_vote(clientID):
     data = request.get_json()
-    print("vote/", json.dumps(data))
+    print(f"vote/{clientID}", json.dumps(data))
     return "VOTE OK", 200
 
 @app.route('/votesTest', methods=['GET'])
@@ -163,6 +163,16 @@ def GET_votes():
         'seq': seq,
     })
     seq += 1
+
+    return response.text, response.status_code
+
+
+@app.route('/updateTest', methods=['GET'])
+def GET_update():
+    response = requests.put(f'{currentURL}/update', json={
+        'authToken': currentAuthToken,
+        "neighbors": ["http://127.0.0.1:5001/", "http://127.0.0.1:5002/", "http://127.0.0.1:5003/"]
+    })
 
     return response.text, response.status_code
 
