@@ -171,7 +171,7 @@ def GET_votes():
 def GET_update():
     response = requests.put(f'{currentURL}/update', json={
         'authToken': currentAuthToken,
-        "neighbors": ["http://127.0.0.1:5001/", "http://127.0.0.1:5002/", "http://127.0.0.1:5003/"]
+        "neighbors": ["http://127.0.0.1:5001/", "http://127.0.0.1:9999/", "http://127.0.0.1:5002/", "http://127.0.0.1:5003/"]
     })
 
     return response.text, response.status_code
