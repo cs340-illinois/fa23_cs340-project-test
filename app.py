@@ -7,12 +7,13 @@ import os
 app = Flask(__name__)
 
 status = 'accept'
-xdim = 10
+xdim = 15
 ydim = 10
-tilesize = 5
+tilesize = 30
 xloc = 0
 yloc = 0
 voteToken = '45046605-4ef3-4dfc-84ed-cfafade8a2db'
+seq = 0
 
 approved = 'true'
 currentAuthToken = 'none'
@@ -23,7 +24,7 @@ currentAuthor = 'none'
 UPLOAD_FOLDER = "uploads"
 
 image_requests = []
-client_image_mapping = {} 
+client_image_mapping = {}
 
 def init():
     dotenv.load_dotenv()
@@ -53,7 +54,7 @@ def GET_state():
         'xloc': xloc,
         'yloc': yloc,
         'voteToken': voteToken,
-        'approved': approved,
+        'approved': True if approved == 'true' else False,
         'currentAuthToken': currentAuthToken,
         'currentAuthor': currentAuthor,
         'currentClientID': currentClientID,
@@ -63,14 +64,16 @@ def GET_state():
 
 @app.route('/accept', methods=['POST'])
 def POST_accept():
-    global status
+    global status, approved
     status = 'accept'
+    approved = 'true'
     return "OK", 200
 
 @app.route('/reject', methods=['POST'])
 def POST_reject():
-    global status
+    global status, approved
     status = 'reject'
+    approved = 'false'
     return "OK", 200
 
 @app.route('/registerImage/<clientID>', methods=["POST"])
@@ -85,6 +88,9 @@ def POST_registerImage(clientID):
     os.makedirs(UPLOAD_FOLDER + "/" + clientID, exist_ok=True)
     file.save(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename)
     print("file saved")
+
+    with open(UPLOAD_FOLDER + "/" + clientID + "/" + file.filename, 'rb') as src_file, open("canvas.png", 'wb') as dest_file:
+        dest_file.write(src_file.read())
 
     if clientID in client_image_mapping:
         client_image_mapping[clientID].append(file.filename)
@@ -119,6 +125,8 @@ def PUT_registerClient(clientID):
         'tilesize': tilesize
     })
 
+    client_image_mapping[clientID] = []
+
     return canvasInfo, 200
 
 
@@ -129,7 +137,7 @@ def GET_registeredTest():
         'xloc': xloc,
         'yloc': yloc,
         'voteToken': voteToken,
-        'approved': approved,
+        'approved': True if approved == 'true' else False,
         'authToken': currentAuthToken,
     })
 
@@ -137,4 +145,38 @@ def GET_registeredTest():
 
 @app.route('/getImage/<clientID>/<imageFileName>', methods=["GET"])
 def GET_image(clientID, imageFileName):
-    return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png') 
+    return send_file(f"uploads/{clientID}/{imageFileName}", mimetype='image/png')
+
+
+@app.route('/vote/<clientID>', methods=['PUT'])
+def PUT_vote(clientID):
+    data = request.get_json()
+    print(f"vote/{clientID}", json.dumps(data))
+    return "VOTE OK", 200
+
+@app.route('/votesTest', methods=['GET'])
+def GET_votes():
+    global seq
+    response = requests.put(f'{currentURL}/votes', json={
+        'authToken': currentAuthToken,
+        'votes': 5,
+        'seq': seq,
+    })
+    seq += 1
+
+    return response.text, response.status_code
+
+
+@app.route('/updateTest', methods=['GET'])
+def GET_update():
+    response = requests.put(f'{currentURL}/update', json={
+        'authToken': currentAuthToken,
+        "neighbors": ["http://127.0.0.1:5001/", "http://127.0.0.1:9999/", "http://127.0.0.1:5002/", "http://127.0.0.1:5003/"]
+    })
+
+    return response.text, response.status_code
+
+
+@app.route('/canvas', methods=["GET"])
+def GET_canvas():
+    return send_file("canvas.png", mimetype='image/png')
